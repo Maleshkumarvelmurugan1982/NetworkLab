@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <string.h>
+
+// Function to calculate even parity bit
+int calculateParityBit(char data[]) {
+    int count = 0;
+    for (int i = 0; data[i] != '\0'; i++) {
+        if (data[i] == '1')
+            count++;
+    }
+    return (count % 2 == 0) ? 0 : 1;  // Even parity
+}
+
+// Sender side: adds parity bit to data
+void paritySender() {
+    char data[100];
+    printf("Enter binary data: ");
+    scanf("%s", data);
+
+    int parityBit = calculateParityBit(data);
+    printf("Parity Bit: %d\n", parityBit);
+
+    // Append parity bit
+    printf("Transmitted Data: %s%d\n", data, parityBit);
+}
+
+// Receiver side: checks for errors using parity
+void parityReceiver() {
+    char received[101];
+    printf("Enter received data (including parity bit): ");
+    scanf("%s", received);
+
+    int count = 0;
+    for (int i = 0; received[i] != '\0'; i++) {
+        if (received[i] == '1')
+            count++;
+    }
+
+    if (count % 2 == 0) {
+        printf("✅ No Error: Data received correctly.\n");
+    } else {
+        printf("❌ Error detected in received data!\n");
+    }
+}
+
+int main() {
+    int choice;
+    printf("1. Parity Sender\n");
+    printf("2. Parity Receiver\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    if (choice == 1) {
+        paritySender();
+    } else if (choice == 2) {
+        parityReceiver();
+    } else {
+        printf("Invalid choice.\n");
+    }
+
+    return 0;
+}
