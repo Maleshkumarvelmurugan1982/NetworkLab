@@ -1,0 +1,115 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+// Function to add two binary strings of size m
+void binary_add(char *a, char *b, char *result, int m) {
+    int carry = 0;
+    for (int i = m - 1; i >= 0; i--) {
+        int bit1 = a[i] - '0';
+        int bit2 = b[i] - '0';
+        int sum = bit1 + bit2 + carry;
+        result[i] = (sum % 2) + '0';
+        carry = sum / 2;
+    }
+
+    // Wrap around carry if any
+    while (carry) {
+        for (int i = m - 1; i >= 0; i--) {
+            int bit = result[i] - '0';
+            int sum = bit + carry;
+            result[i] = (sum % 2) + '0';
+            carry = sum / 2;
+            if (carry == 0)
+                break;
+        }
+    }
+}
+
+// 1’s complement
+void ones_complement(char *a, int m) {
+    for (int i = 0; i < m; i++) {
+        a[i] = (a[i] == '0') ? '1' : '0';
+    }
+}
+
+int main() {
+    char data[128], temp[32], checksum[32], block[32];
+    int m;
+
+    printf("SENDER SIDE\n");
+    printf("Enter binary data: ");
+    scanf("%s", data);
+
+    printf("Enter block size (m): ");
+    scanf("%d", &m);
+
+    int len = strlen(data);
+    int rem = len % m;
+
+    // Padding
+    if (rem != 0) {
+        for (int i = 0; i < m - rem; i++)
+            strcat(data, "0");
+        len = strlen(data);
+    }
+
+    int num_blocks = len / m;
+    strncpy(checksum, data, m);
+    checksum[m] = '\0';
+
+    for (int i = 1; i < num_blocks; i++) {
+        strncpy(block, data + i * m, m);
+        block[m] = '\0';
+        binary_add(checksum, block, checksum, m);
+    }
+
+    ones_complement(checksum, m);
+
+    printf("Generated Checksum: %s\n", checksum);
+    printf("Final data to send: %s%s\n", data, checksum);
+
+    // ---------------------
+    // RECEIVER SIDE
+    // ---------------------
+    printf("\nRECEIVER SIDE\n");
+
+    char recv_data[160];
+    strcpy(recv_data, data);
+    strcat(recv_data, checksum);  // Append checksum to data
+    len = strlen(recv_data);
+    num_blocks = len / m;
+
+    printf("Received Data + Checksum: %s\n", recv_data);
+    printf("Dividing into %d blocks of %d bits...\n", num_blocks, m);
+
+    strncpy(temp, recv_data, m);
+    temp[m] = '\0';
+
+    for (int i = 1; i < num_blocks; i++) {
+        strncpy(block, recv_data + i * m, m);
+        block[m] = '\0';
+        printf("Adding block %d: %s\n", i + 1, block);
+        binary_add(temp, block, temp, m);
+    }
+
+    printf("Sum before complement: %s\n", temp);
+    ones_complement(temp, m);
+    printf("Final checksum (1's complement): %s\n", temp);
+
+    // Check if all bits are 0
+    int valid = 1;
+    for (int i = 0; i < m; i++) {
+        if (temp[i] != '0') {
+            valid = 0;
+            break;
+        }
+    }
+
+    if (valid)
+        printf("✅ Message accepted. No error detected.\n");
+    else
+        printf("❌ Message discarded. Error detected in received data.\n");
+
+    return 0;
+}
