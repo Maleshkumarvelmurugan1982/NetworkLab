@@ -1,57 +1,54 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+int isPowerOfTwo(int x) { return x && !(x & (x - 1)); }
+
+int calculateParityBits(int k) {
+    int r = 0;
+    while ((1 << r) < (k + r + 1)) r++;
+    return r;
+}
 
 int main() {
-    int data[12] = {0};
-    int i, c1, c2, c3, c4, error_pos;
-
-    int data_bits_pos[7] = {11,10,9,7,6,5,3};
-    for(i = 0; i < 7; i++) {
-        scanf("%d", &data[data_bits_pos[i]]);
+    int k, r, n, *hamming, *data_bits, *received, error_pos = 0;
+    printf("Enter number of data bits: ");
+    scanf("%d", &k);
+    r = calculateParityBits(k);
+    n = k + r;
+    hamming = calloc(n + 1, sizeof(int));
+    data_bits = malloc(k * sizeof(int));
+    printf("Enter %d data bits (MSB to LSB):\n", k);
+    for (int i = 0; i < k; i++) scanf("%d", &data_bits[i]);
+    for (int i = 1, j = k - 1; i <= n; i++)
+        if (!isPowerOfTwo(i)) hamming[i] = data_bits[j--];
+    for (int i = 0; i < r; i++) {
+        int p = 1 << i, parity = 0;
+        for (int j = 1; j <= n; j++)
+            if (j & p) parity ^= hamming[j];
+        hamming[p] = parity;
     }
-
-    c1 = data[1] ^ data[3] ^ data[5] ^ data[7] ^ data[9] ^ data[11];
-    data[1] = c1;
-
-    c2 = data[2] ^ data[3] ^ data[6] ^ data[7] ^ data[10] ^ data[11];
-    data[2] = c2;
-
-    c3 = data[4] ^ data[5] ^ data[6] ^ data[7];
-    data[4] = c3;
-
-    c4 = data[8] ^ data[9] ^ data[10] ^ data[11];
-    data[8] = c4;
-
-    printf("Encoded data: ");
-    for(i = 11; i >= 1; i--) {
-        printf("%d", data[i]);
+    printf("Encoded Hamming code: ");
+    for (int i = n; i >= 1; i--) printf("%d", hamming[i]);
+    printf("\nEnter received %d bits (MSB to LSB):\n", n);
+    received = calloc(n + 1, sizeof(int));
+    for (int i = 0; i < n; i++) {
+        int bit; scanf("%d", &bit);
+        received[n - i] = bit;
     }
-    printf("\n");
-
-    int received[12] = {0};
-    printf("Enter received 11 bits (bit 11 to bit 1):\n");
-    for(i = 11; i >= 1; i--) {
-        scanf("%d", &received[i]);
+    for (int i = 0; i < r; i++) {
+        int p = 1 << i, parity = 0;
+        for (int j = 1; j <= n; j++)
+            if (j & p) parity ^= received[j];
+        if (parity) error_pos += p;
     }
-
-    c1 = received[1] ^ received[3] ^ received[5] ^ received[7] ^ received[9] ^ received[11];
-    c2 = received[2] ^ received[3] ^ received[6] ^ received[7] ^ received[10] ^ received[11];
-    c3 = received[4] ^ received[5] ^ received[6] ^ received[7];
-    c4 = received[8] ^ received[9] ^ received[10] ^ received[11];
-
-    error_pos = c4 * 8 + c3 * 4 + c2 * 2 + c1;
-
-    if(error_pos == 0) {
-        printf("No error detected in received data.\n");
-    } else {
-        printf("Error detected at bit position: %d (from right)\n", error_pos);
-        received[error_pos] = 1 - received[error_pos];
-
+    if (error_pos == 0) printf("No error detected.\n");
+    else {
+        printf("Error detected at bit position: %d\n", error_pos);
+        received[error_pos] ^= 1;
         printf("Corrected data: ");
-        for(i = 11; i >= 1; i--) {
-            printf("%d", received[i]);
-        }
+        for (int i = n; i >= 1; i--) printf("%d", received[i]);
         printf("\n");
     }
-
+    free(hamming); free(data_bits); free(received);
     return 0;
 }
