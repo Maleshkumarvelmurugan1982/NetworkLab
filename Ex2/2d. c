@@ -4,7 +4,7 @@
 #define ROWS 4
 #define COLS 4
 
-// Function to calculate 2D parity and send
+// Sender side: calculate and show 2D parity
 void paritySender2D() {
     char data[ROWS][COLS + 1];  // +1 for null terminator
     int rowParity[ROWS] = {0};
@@ -20,6 +20,7 @@ void paritySender2D() {
             }
         }
     }
+
     printf("Row Parity: ");
     for (int i = 0; i < ROWS; i++) {
         printf("%d", rowParity[i] % 2);
@@ -33,9 +34,9 @@ void paritySender2D() {
     printf("\n");
 }
 
-// Function to receive 2D data and check parity
+// Receiver side: check 2D parity and give simple result
 void parityReceiver2D() {
-    char received[ROWS][COLS + 2];  // +1 for row parity +1 for null
+    char received[ROWS][COLS + 2];  // +1 for row parity, +1 for null terminator
     char colParity[COLS + 1];
 
     printf("Enter received data (%d rows of %d+1 bits with row parity):\n", ROWS, COLS);
@@ -48,30 +49,31 @@ void parityReceiver2D() {
 
     int error = 0;
 
-    printf("Checking Row Parity:\n");
+    // Check row parity
     for (int i = 0; i < ROWS; i++) {
         int count = 0;
         for (int j = 0; j < COLS + 1; j++) {
-            if (received[i][j] == '1')
+            if (received[i][j] == '1') {
                 count++;
+            }
         }
-        printf("Row %d: %s --> Parity: %s\n", i + 1, received[i], (count % 2 == 0) ? "✅" : "❌");
         if (count % 2 != 0) {
             error = 1;
+            break;
         }
     }
 
-    printf("Checking Column Parity:\n");
+    // Check column parity
     for (int j = 0; j < COLS; j++) {
         int count = 0;
         for (int i = 0; i < ROWS; i++) {
-            if (received[i][j] == '1')
+            if (received[i][j] == '1') {
                 count++;
+            }
         }
-        int expected = colParity[j] - '0';
-        printf("Column %d: Count of 1s = %d, Expected = %d --> %s\n", j + 1, count, expected, (count % 2 == expected) ? "✅" : "❌");
-        if ((count % 2) != expected) {
+        if ((count % 2) != (colParity[j] - '0')) {
             error = 1;
+            break;
         }
     }
 
