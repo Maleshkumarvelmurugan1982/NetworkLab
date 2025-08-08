@@ -1,97 +1,88 @@
 #include <stdio.h>
+#include <string.h>
 
-#define MAX_ROWS 10
-#define MAX_COLS 10
+#define ROWS 4
+#define COLS 4
 
-// Sender: Input data matrix and calculate parity bits
-void paritySender(int data[MAX_ROWS][MAX_COLS], int rows, int cols,
-                  int rowParity[MAX_ROWS], int colParity[MAX_COLS]) {
-    // Calculate row parity bits
-    for (int i = 0; i < rows; i++) {
-        int count = 0;
-        for (int j = 0; j < cols; j++) {
-            if (data[i][j] == 1)
-                count++;
+// Function to calculate 2D parity and send
+void paritySender2D() {
+    char data[ROWS][COLS + 1];  // +1 for null terminator
+    int rowParity[ROWS] = {0};
+    int colParity[COLS] = {0};
+
+    printf("Enter %d rows of %d-bit binary data:\n", ROWS, COLS);
+    for (int i = 0; i < ROWS; i++) {
+        scanf("%s", data[i]);
+        for (int j = 0; j < COLS; j++) {
+            if (data[i][j] == '1') {
+                rowParity[i]++;
+                colParity[j]++;
+            }
         }
-        rowParity[i] = (count % 2 == 0) ? 0 : 1;  // Even parity
     }
-
-    // Calculate column parity bits (including row parity bits)
-    for (int j = 0; j < cols; j++) {
-        int count = 0;
-        for (int i = 0; i < rows; i++) {
-            if (data[i][j] == 1)
-                count++;
-        }
-        // Add the parity bits from row parity to column parity calculation if needed
-        // But here, we only consider data bits; column parity computed after row parity
-        colParity[j] = (count % 2 == 0) ? 0 : 1;  // Even parity
+    printf("Row Parity: ");
+    for (int i = 0; i < ROWS; i++) {
+        printf("%d", rowParity[i] % 2);
     }
-}
+    printf("\n");
 
-// Display matrix with parity bits
-void displayMatrix(int data[MAX_ROWS][MAX_COLS], int rows, int cols,
-                   int rowParity[MAX_ROWS], int colParity[MAX_COLS]) {
-    printf("\nData with parity bits:\n");
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            printf("%d ", data[i][j]);
-        }
-        printf("| %d\n", rowParity[i]);
-    }
-
-    for (int j = 0; j < cols; j++) {
-        printf("--");
-    }
-    printf("-\n");
-
-    for (int j = 0; j < cols; j++) {
-        printf("%d ", colParity[j]);
+    printf("Column Parity: ");
+    for (int j = 0; j < COLS; j++) {
+        printf("%d", colParity[j] % 2);
     }
     printf("\n");
 }
 
-// Receiver: Verify parity bits to detect error
-void parityReceiver(int received[MAX_ROWS][MAX_COLS], int rows, int cols,
-                    int receivedRowParity[MAX_ROWS], int receivedColParity[MAX_COLS]) {
-    int errorRow = -1, errorCol = -1;
+// Function to receive 2D data and check parity
+void parityReceiver2D() {
+    char received[ROWS][COLS + 2];  // +1 for row parity +1 for null
+    char colParity[COLS + 1];
 
-    // Check row parity
-    for (int i = 0; i < rows; i++) {
+    printf("Enter received data (%d rows of %d+1 bits with row parity):\n", ROWS, COLS);
+    for (int i = 0; i < ROWS; i++) {
+        scanf("%s", received[i]);
+    }
+
+    printf("Enter received column parity (%d bits): ", COLS);
+    scanf("%s", colParity);
+
+    int error = 0;
+
+    printf("Checking Row Parity:\n");
+    for (int i = 0; i < ROWS; i++) {
         int count = 0;
-        for (int j = 0; j < cols; j++) {
-            if (received[i][j] == 1)
+        for (int j = 0; j < COLS + 1; j++) {
+            if (received[i][j] == '1')
                 count++;
         }
-        int expected = (count % 2 == 0) ? 0 : 1;
-        if (expected != receivedRowParity[i]) {
-            errorRow = i;
-            break;
+        printf("Row %d: %s --> Parity: %s\n", i + 1, received[i], (count % 2 == 0) ? "✅" : "❌");
+        if (count % 2 != 0) {
+            error = 1;
         }
     }
 
-    // Check column parity
-    for (int j = 0; j < cols; j++) {
+    printf("Checking Column Parity:\n");
+    for (int j = 0; j < COLS; j++) {
         int count = 0;
-        for (int i = 0; i < rows; i++) {
-            if (received[i][j] == 1)
+        for (int i = 0; i < ROWS; i++) {
+            if (received[i][j] == '1')
                 count++;
         }
-        int expected = (count % 2 == 0) ? 0 : 1;
-        if (expected != receivedColParity[j]) {
-            errorCol = j;
-            break;
+        int expected = colParity[j] - '0';
+        printf("Column %d: Count of 1s = %d, Expected = %d --> %s\n", j + 1, count, expected, (count % 2 == expected) ? "✅" : "❌");
+        if ((count % 2) != expected) {
+            error = 1;
         }
     }
 
-    printf("\n--- Receiver Side ---\n");
-    if (errorRow == -1 && errorCol == -1) {
-        printf("✅ No error detected. Data received correctly.\n");
+    if (!error) {
+        printf("✅ No Error: Data received correctly.\n");
     } else {
-        printf("❌ Error detected at Row %d, Column %d\n", errorRow + 1, errorCol + 1);
+        printf("❌ Error detected in received data!\n");
     }
 }
 
+// Main menu
 int main() {
     int choice;
     printf("1. 2D Parity Sender\n");
@@ -100,74 +91,9 @@ int main() {
     scanf("%d", &choice);
 
     if (choice == 1) {
-        int rows, cols;
-        int data[MAX_ROWS][MAX_COLS];
-        int rowParity[MAX_ROWS], colParity[MAX_COLS];
-
-        printf("Enter number of rows (max %d): ", MAX_ROWS);
-        scanf("%d", &rows);
-        printf("Enter number of columns (max %d): ", MAX_COLS);
-        scanf("%d", &cols);
-
-        printf("Enter the data bits row-wise (only 0 or 1):\n");
-        for (int i = 0; i < rows; i++) {
-            printf("Row %d: ", i + 1);
-            for (int j = 0; j < cols; j++) {
-                scanf("%d", &data[i][j]);
-                if (data[i][j] != 0 && data[i][j] != 1) {
-                    printf("Invalid input! Please enter only 0 or 1.\n");
-                    j--;
-                }
-            }
-        }
-
-        paritySender(data, rows, cols, rowParity, colParity);
-        displayMatrix(data, rows, cols, rowParity, colParity);
-
+        paritySender2D();
     } else if (choice == 2) {
-        int rows, cols;
-        int received[MAX_ROWS][MAX_COLS];
-        int receivedRowParity[MAX_ROWS], receivedColParity[MAX_COLS];
-
-        printf("Enter number of rows (max %d): ", MAX_ROWS);
-        scanf("%d", &rows);
-        printf("Enter number of columns (max %d): ", MAX_COLS);
-        scanf("%d", &cols);
-
-        printf("Enter the received data bits row-wise (without parity bits):\n");
-        for (int i = 0; i < rows; i++) {
-            printf("Row %d: ", i + 1);
-            for (int j = 0; j < cols; j++) {
-                scanf("%d", &received[i][j]);
-                if (received[i][j] != 0 && received[i][j] != 1) {
-                    printf("Invalid input! Please enter only 0 or 1.\n");
-                    j--;
-                }
-            }
-        }
-
-        printf("Enter the received row parity bits:\n");
-        for (int i = 0; i < rows; i++) {
-            printf("Row parity bit %d: ", i + 1);
-            scanf("%d", &receivedRowParity[i]);
-            if (receivedRowParity[i] != 0 && receivedRowParity[i] != 1) {
-                printf("Invalid parity bit! Enter 0 or 1.\n");
-                i--;
-            }
-        }
-
-        printf("Enter the received column parity bits:\n");
-        for (int j = 0; j < cols; j++) {
-            printf("Column parity bit %d: ", j + 1);
-            scanf("%d", &receivedColParity[j]);
-            if (receivedColParity[j] != 0 && receivedColParity[j] != 1) {
-                printf("Invalid parity bit! Enter 0 or 1.\n");
-                j--;
-            }
-        }
-
-        parityReceiver(received, rows, cols, receivedRowParity, receivedColParity);
-
+        parityReceiver2D();
     } else {
         printf("Invalid choice.\n");
     }
